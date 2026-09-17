@@ -1,0 +1,20 @@
+.inputCol {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    margin-bottom: 1em;
+}
+
+.input {
+    resize: vertical;
+    width: 100%;
+}
+
+.output {
+    height: 20em;
+    resize: vertical;
+}
+
+.btn {
+    align-self: flex-end;
+}
