@@ -4,8 +4,6 @@ declare module "@site/static/miking/src/es-boot/mi.mjs" {
     export default function main(env: CompilerEnv): void;
 }
 
-globalThis.addEventListener("message", handleMessage);
-
 export interface ToWorkerMessage {
     input: string,
 }
@@ -18,7 +16,6 @@ export interface PrintMessage {
 
 export interface ExitMessage {
     type: "exit",
-    code: number,
 }
 
 export type FromWorkerMessage = PrintMessage | ExitMessage;
@@ -31,11 +28,20 @@ function print(text: string, err = false) {
     } satisfies PrintMessage);
 }
 
-function exit(code: number) {
+function prompt() {
+    print(`[miking@${globalThis.location.hostname} demo]$ `);
+}
+
+function exit() {
     globalThis.postMessage({
         type: "exit",
-        code
     } satisfies ExitMessage);
+}
+
+main();
+function main() {
+    globalThis.addEventListener("message", handleMessage);
+    prompt();
 }
 
 function handleMessage(event: MessageEvent<ToWorkerMessage>) {
@@ -44,28 +50,34 @@ function handleMessage(event: MessageEvent<ToWorkerMessage>) {
 }
 
 async function compileAndRun(input: string) {
+    let code = 0;
     try {
-        print("=== COMPILING ===\n\n");
+        print("mi compile --test ./playground.mc --output ./playground\n");
+
         const compilerEnv = newCompilerEnv(input);
         mi(compilerEnv);
         const output = compilerEnv.getOutput();
 
-        print("\n==== RUNNING ====\n\n");
+        prompt();
+        print("./playground\n");
+
         const dataUrl = `data:text/javascript;base64,${globalThis.btoa(output)}`;
         const program = (await import(/* webpackIgnore: true */ dataUrl)).default as (env: ProgramEnv) => void;
         const programEnv = newProgramEnv();
         program(programEnv);
     } catch (error) {
         if (error instanceof ExitError) {
-            exit(error.code);
+            code = error.code;
         } else {
             print("\n\n" + error);
-            exit(1);
+            code = 1;
         }
-        return;
     }
 
-    exit(0);
+    print(`\n`);
+    prompt();
+
+    exit();
 }
 
 type CompilerEnv = ReturnType<typeof newCompilerEnv>;
@@ -75,15 +87,17 @@ function newCompilerEnv(input: string) {
     const argv = [
         "mi",
         "compile",
-        "playground.mc",
         "--test",
+        "playground.mc",
+        "--output",
+        "./playground",
         "--to-es"
     ];
 
     let fs = new Map<string, string>();
     
-    const HOME = "/root";
-    const PWD = `${HOME}/miking`;
+    const HOME = "/home/miking";
+    const PWD = `${HOME}/demo`;
     const STDLIB = `${HOME}/.local/lib/mcore/stdlib`;
     const MCORE_LIBS = `stdlib=${STDLIB}`;
     
@@ -221,7 +235,7 @@ function newCompilerEnv(input: string) {
         wallTimeMs: (): number => Date.now(),
 
         getOutput: (): string => {
-            const content = fs.get("./playground.mjs");
+            const content = fs.get("./playground");
             if (typeof content !== "string") {
                 throw new Error("Missing compiler output");
             }

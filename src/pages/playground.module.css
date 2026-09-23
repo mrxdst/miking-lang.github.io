@@ -6,13 +6,12 @@
 }
 
 .input {
-    resize: vertical;
+    height: 50vh;
     width: 100%;
 }
 
 .output {
-    height: 20em;
-    resize: vertical;
+    height: 50vh;
 }
 
 .btn {
