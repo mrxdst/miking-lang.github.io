@@ -11,7 +11,6 @@ export interface ToWorkerMessage {
 export interface PrintMessage {
     type: "print",
     text: string,
-    err?: boolean | undefined,
 }
 
 export interface ExitMessage {
@@ -20,16 +19,15 @@ export interface ExitMessage {
 
 export type FromWorkerMessage = PrintMessage | ExitMessage;
 
-function print(text: string, err = false) {
+function print(text: string) {
     globalThis.postMessage({
         type: "print",
         text,
-        err,
     } satisfies PrintMessage);
 }
 
 function prompt() {
-    print(`[miking@${globalThis.location.hostname} demo]$ `);
+    print(`[miking@${globalThis.location.hostname} ~]$ `);
 }
 
 function exit() {
@@ -208,11 +206,11 @@ function newCompilerEnv(input: string) {
         },
 
         printError: (s: string): void => {
-            print(s, true);
+            print(s);
         },
 
         dprint: (v: unknown): void => {
-            console.log(v);
+            print(JSON.stringify(v, null, 2));
         },
 
         flushStdout: () => {},
@@ -255,11 +253,11 @@ function newProgramEnv() {
         },
 
         printError: (s: string): void => {
-            print(s, true);
+            print(s);
         },
 
         dprint: (v: unknown): void => {
-            console.log(v);
+            print(JSON.stringify(v, null, 2));
         },
 
         flushStdout: () => {},

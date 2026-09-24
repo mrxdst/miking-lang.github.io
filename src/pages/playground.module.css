@@ -1,21 +1,23 @@
-.inputCol {
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-    margin-bottom: 1em;
+.root {
+    max-width: 1800px;
 }
 
 .input {
-    height: 50vh;
+    height: 60vh;
     width: 100%;
     border: 1px solid #80808080;
 }
 
 .output {
-    height: 50vh;
+    height: 60vh;
     border: 1px solid #80808080;
+    overflow: hidden;
 }
 
-.btn {
-    align-self: flex-end;
+.textAlignRight {
+    text-align: right;
+}
+
+:global(.xterm .xterm-cursor) {
+    visibility: hidden;
 }

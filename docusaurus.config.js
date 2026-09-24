@@ -75,6 +75,11 @@ const config = {
             label: 'Publications',
           },
           {
+            to: 'playground',
+            position: 'left',
+            label: 'Playground',
+          },
+          {
             to: 'workshop-2025',
             position: 'left',
             label: 'Workshop 2025',
