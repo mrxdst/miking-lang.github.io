@@ -1,26 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useColorMode } from "@docusaurus/theme-common";
 import Layout from "@theme/Layout";
 import styles from "./playground.module.css";
 import clsx from "clsx";
 import type { FromWorkerMessage, ToWorkerMessage } from "./playground.worker";
 import "@xterm/xterm/css/xterm.css";
-import { Terminal } from "@xterm/xterm";
+import { ITheme, Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import Editor from '@monaco-editor/react';
+import Editor from "@monaco-editor/react";
 import type * as monaco from "monaco-editor";
+import { conf, language } from "../misc/miking-monarch";
 
-const STORAGE_KEY = "miking-playground-input";
+const STORAGE_KEY = "miking-playground-src";
 const DEFAULT_INPUT = [
     "mexpr",
     "",
     "print \"Hello world!\""
 ].join("\n");
 
+const termLightTheme: ITheme = {
+  background: "#ffffff",
+  foreground: "#000000",
+  cursor: "#000000",
+  selectionBackground: "#b4b4b4",
+};
+
+const termDarkTheme: ITheme = {
+  background: "#1e1e1e",
+  foreground: "#d4d4d4",
+  cursor: "#d4d4d4",
+};
+
 function initWorker(): Worker {
     return new Worker(new URL("./playground.worker", import.meta.url));
 }
 
 export default function Playground(): JSX.Element {
+    return (
+        <Layout title="Playground">
+            <PlaygroundInner/>
+        </Layout>
+    );
+}
+
+function PlaygroundInner(): JSX.Element {
+    const {colorMode} = useColorMode();
+
     const [worker, setWorker] = useState<Worker>(initWorker);
     const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const termContainerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +59,11 @@ export default function Playground(): JSX.Element {
     useEffect(() => {
         if (!termContainerRef.current) return;
 
-        const term = termRef.current = new Terminal({convertEol: true, disableStdin: true});
+        const term = termRef.current = new Terminal({
+            convertEol: true,
+            disableStdin: true,
+            theme: colorMode === "dark" ? termDarkTheme : termLightTheme,
+        });
         const termFit = new FitAddon();
 
         term.open(termContainerRef.current);
@@ -52,6 +81,12 @@ export default function Playground(): JSX.Element {
             termFit.dispose();
         };
     }, []);
+
+    // Terminal theme
+    useEffect(() => {
+        if (!termRef.current) return;
+        termRef.current.options.theme = colorMode === "dark" ? termDarkTheme : termLightTheme;
+    }, [colorMode]);
 
     // Worker
     useEffect(() => {
@@ -74,7 +109,13 @@ export default function Playground(): JSX.Element {
         }
     }, [worker])
 
-    const handleEditorDidMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor) => {
+    const handleEditorBeforeMount = useCallback((monaco: typeof import("monaco-editor")) => {
+        monaco.languages.register({id: "miking"});
+        monaco.languages.setMonarchTokensProvider("miking", language);
+        monaco.languages.setLanguageConfiguration("miking", conf);
+    }, []);
+
+    const handleEditorMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor) => {
         editorRef.current = editor;
     }, []);
 
@@ -86,7 +127,7 @@ export default function Playground(): JSX.Element {
 
     const handleRun = useCallback(() => {
         setRunning(true);
-        const msg: ToWorkerMessage = { input: editorRef.current?.getValue() || '' };
+        const msg: ToWorkerMessage = { input: editorRef.current?.getValue() || "" };
         worker.postMessage(msg);
     }, [worker]);
 
@@ -97,27 +138,28 @@ export default function Playground(): JSX.Element {
     }, [initWorker]);
 
     return (
-        <Layout title="Playground">
-            <div className="container margin-vert--lg">
-                <div className="row">
-                    <div className={clsx("col col--6", styles.inputCol)}>
-                        <div className={styles.input}>
-                            <Editor
-                                defaultValue={defaultInput}
-                                onMount={handleEditorDidMount}
-                                onChange={handleEditorChange}
-                            />
-                        </div>
-                        {running
-                            ? <button className={styles.btn} onClick={handleAbort}>Abort</button>
-                            : <button className={styles.btn} onClick={handleRun}>Run</button>
-                        }
+        <div className="container margin-vert--lg">
+            <div className="row">
+                <div className={clsx("col col--6", styles.inputCol)}>
+                    <div className={styles.input}>
+                        <Editor
+                            language="miking"
+                            theme={colorMode === "dark" ? "vs-dark" : "vs"}
+                            defaultValue={defaultInput}
+                            beforeMount={handleEditorBeforeMount}
+                            onMount={handleEditorMount}
+                            onChange={handleEditorChange}
+                        />
                     </div>
-                    <div className="col col--6">
-                        <div className={styles.output} ref={termContainerRef}/>
-                    </div>
+                    {running
+                        ? <button className={styles.btn} onClick={handleAbort}>Abort</button>
+                        : <button className={styles.btn} onClick={handleRun}>Run</button>
+                    }
+                </div>
+                <div className="col col--6">
+                    <div className={styles.output} ref={termContainerRef}/>
                 </div>
             </div>
-        </Layout>
+        </div>
     );
 }

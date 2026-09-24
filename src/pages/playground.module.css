@@ -8,11 +8,12 @@
 .input {
     height: 50vh;
     width: 100%;
-    border: 1px solid lightgray;
+    border: 1px solid #80808080;
 }
 
 .output {
     height: 50vh;
+    border: 1px solid #80808080;
 }
 
 .btn {
