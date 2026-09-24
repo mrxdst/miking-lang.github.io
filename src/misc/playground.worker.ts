@@ -4,6 +4,11 @@ declare module "@site/static/miking/src/es-boot/mi.mjs" {
     export default function main(env: CompilerEnv): void;
 }
 
+// Stupid stuff to make docusaurus and webpack work correctly in
+// both development and production mode.
+declare const __webpack_public_path__: string;
+const importUrl = new Function("url", "return import(url)") as (url: string) => Promise<any>;
+
 export interface ToWorkerMessage {
     input: string,
 }
@@ -60,7 +65,7 @@ async function compileAndRun(input: string) {
         print("./playground\n");
 
         const dataUrl = `data:text/javascript;base64,${globalThis.btoa(output)}`;
-        const program = (await import(/* webpackIgnore: true */ dataUrl)).default as (env: ProgramEnv) => void;
+        const program = (await importUrl(dataUrl)).default as (env: ProgramEnv) => void;
         const programEnv = newProgramEnv();
         program(programEnv);
     } catch (error) {
@@ -295,11 +300,12 @@ function syncFetchStdLibFile(file: string): string | null {
     }
 
     const request = new XMLHttpRequest();
-    request.open("GET", `/miking/src/stdlib/${file}`, false);
+    request.open("GET", `${__webpack_public_path__}miking/src/stdlib/${file}`, false);
     request.send(null);
 
     if (request.status < 200 || request.status >= 300) {
-        throw new Error(request.statusText);
+        fetchCache.set(file, null);
+        return null;
     }
 
     if (request.getResponseHeader("Content-Type")?.toUpperCase()?.includes("HTML")) {

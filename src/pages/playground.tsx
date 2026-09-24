@@ -3,13 +3,14 @@ import { useColorMode } from "@docusaurus/theme-common";
 import Layout from "@theme/Layout";
 import styles from "./playground.module.css";
 import clsx from "clsx";
-import type { FromWorkerMessage, ToWorkerMessage } from "./playground.worker";
+import type { FromWorkerMessage, ToWorkerMessage } from "../misc/playground.worker";
 import "@xterm/xterm/css/xterm.css";
 import { ITheme, Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import Editor from "@monaco-editor/react";
 import type * as monaco from "monaco-editor";
 import { conf, language } from "../misc/miking-monarch";
+import BrowserOnly from "@docusaurus/BrowserOnly";
 
 const STORAGE_KEY = "miking-playground-src";
 const DEFAULT_INPUT = `-- A base language fragment for an expression evaluator.
@@ -89,13 +90,15 @@ const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
 };
 
 function initWorker(): Worker {
-    return new Worker(new URL("./playground.worker", import.meta.url));
+    return new Worker(new URL("../misc/playground.worker", import.meta.url));
 }
 
 export default function Playground(): JSX.Element {
     return (
         <Layout title="Playground">
-            <PlaygroundInner/>
+            <BrowserOnly>
+                {() => <PlaygroundInner/>}
+            </BrowserOnly>
         </Layout>
     );
 }
