@@ -193,7 +193,6 @@ function PlaygroundInner(): JSX.Element {
 
     const handleAbort = useCallback(() => {
         setRunning(false);
-        termRef.current?.write("^C\n");
         setWorker(initWorker());
     }, [initWorker]);
 
@@ -204,7 +203,7 @@ function PlaygroundInner(): JSX.Element {
                     <h1>The Miking playground</h1>
                     <p>
                         Edit the Miking program source in the editor to the left and hit <b>Run</b>.<br/>
-                        The compilation and program output will be displayed in the terminal to the right.
+                        The program output will be displayed in the right column.
                     </p>
                 </div>
             </div>
@@ -230,9 +229,6 @@ function PlaygroundInner(): JSX.Element {
                 </div>
                 <div className="col col--6">
                     <div className={styles.output} ref={termContainerRef}/>
-                    <p className={styles.textAlignRight}>
-                        <small>The terminal is non-interactive.</small>
-                    </p>
                 </div>
             </div>
         </div>

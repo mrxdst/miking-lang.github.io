@@ -31,10 +31,6 @@ function print(text: string) {
     } satisfies PrintMessage);
 }
 
-function prompt() {
-    print(`[miking@${globalThis.location.hostname} ~]$ `);
-}
-
 function exit() {
     globalThis.postMessage({
         type: "exit",
@@ -44,43 +40,49 @@ function exit() {
 main();
 function main() {
     globalThis.addEventListener("message", handleMessage);
-    prompt();
 }
 
 function handleMessage(event: MessageEvent<ToWorkerMessage>) {
     const input = event.data.input;
     compileAndRun(input);
+    
 }
 
 async function compileAndRun(input: string) {
-    let code = 0;
     try {
-        print("mi compile --test ./playground.mc --output ./playground\n");
-
         const compilerEnv = newCompilerEnv(input);
-        mi(compilerEnv);
-        const output = compilerEnv.getOutput();
-
-        prompt();
-        print("./playground\n");
-
-        const dataUrl = `data:text/javascript;base64,${globalThis.btoa(output)}`;
-        const program = (await importUrl(dataUrl)).default as (env: ProgramEnv) => void;
-        const programEnv = newProgramEnv();
-        program(programEnv);
-    } catch (error) {
-        if (error instanceof ExitError) {
-            code = error.code;
-        } else {
-            print("\n\n" + error);
-            code = 1;
+        try {
+            mi(compilerEnv);
+        } catch (error) {
+            if (error instanceof ExitError) {
+                if (error.code) {
+                    print(compilerEnv.getStdout());
+                    return;
+                }
+            } else {
+                print("" + error);
+                return;
+            }
         }
+
+        try {
+            const dataUrl = `data:text/javascript;base64,${globalThis.btoa(compilerEnv.getOutput())}`;
+            const program = (await importUrl(dataUrl)).default as (env: ProgramEnv) => void;
+            const programEnv = newProgramEnv();
+            program(programEnv);
+        } catch (error) {
+            if (error instanceof ExitError) {
+                if (error.code) {
+                    print(`\nProgram exited with code: ${error.code}`);
+                }
+            } else {
+                print("\n" + error);
+            }
+        }
+    } finally {
+        print("\n");
+        exit();
     }
-
-    print(`\n`);
-    prompt();
-
-    exit();
 }
 
 type CompilerEnv = ReturnType<typeof newCompilerEnv>;
@@ -92,19 +94,19 @@ function newCompilerEnv(input: string) {
         "compile",
         "--test",
         "playground.mc",
-        "--output",
-        "./playground",
         "--to-es"
     ];
 
     let fs = new Map<string, string>();
     
     const HOME = "/home/miking";
-    const PWD = `${HOME}/demo`;
+    const PWD = `${HOME}`;
     const STDLIB = `${HOME}/.local/lib/mcore/stdlib`;
     const MCORE_LIBS = `stdlib=${STDLIB}`;
     
     fs.set(`${PWD}/playground.mc`, input);
+
+    let stdout = "";
 
     const env = {
         argv: (): string[] => argv,
@@ -207,15 +209,15 @@ function newCompilerEnv(input: string) {
         },
 
         print: (s: string): void => {
-            print(s);
+            stdout += s;
         },
 
         printError: (s: string): void => {
-            print(s);
+            stdout += s;
         },
 
         dprint: (v: unknown): void => {
-            print(JSON.stringify(v, null, 2));
+            stdout += JSON.stringify(v, null, 2);
         },
 
         flushStdout: () => {},
@@ -238,12 +240,14 @@ function newCompilerEnv(input: string) {
         wallTimeMs: (): number => Date.now(),
 
         getOutput: (): string => {
-            const content = fs.get("./playground");
+            const content = fs.get("./playground.mjs");
             if (typeof content !== "string") {
                 throw new Error("Missing compiler output");
             }
             return content;
         },
+
+        getStdout: (): string => stdout,
     };
 
     return env;
