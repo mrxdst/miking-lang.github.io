@@ -1,12 +1,18 @@
-import mi from "@site/static/miking/src/es-boot/mi.mjs";
+/// <reference types="webpack/module" />
 
-declare module "@site/static/miking/src/es-boot/mi.mjs" {
+import mi from "../../modules/miking/src/es-boot/mi.mjs";
+
+declare module "../../modules/miking/src/es-boot/mi.mjs" {
     export default function main(env: CompilerEnv): void;
 }
 
-// Stupid stuff to make docusaurus and webpack work correctly in
-// both development and production mode.
-declare const __webpack_public_path__: string;
+const stdlibCtx = import.meta.webpackContext("file-loader?outputPath=stdlib!../../modules/miking/src/stdlib", {
+    mode: "sync",
+    recursive: true,
+    regExp: /\.mc$/i,
+});
+
+// Workaround to silence warning.
 const importUrl = new Function("url", "return import(url)") as (url: string) => Promise<any>;
 
 export interface ToWorkerMessage {
@@ -203,7 +209,12 @@ function newCompilerEnv(input: string) {
         fileExists: (path: string): boolean => {
             if (path.startsWith(STDLIB)) {
                 const file = path.substring(STDLIB.length + 1);
-                return syncFetchStdLibFile(file) !== null;
+                try {
+                    stdlibCtx(`./${file}`);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
             }
             return fs.has(path);
         },
@@ -295,7 +306,7 @@ function newProgramEnv() {
     };
 }
 
-const fetchCache = new Map<string, string | null>();
+const fetchCache = new Map<string, string>();
 
 function syncFetchStdLibFile(file: string): string | null {
     const cached = fetchCache.get(file);
@@ -304,17 +315,19 @@ function syncFetchStdLibFile(file: string): string | null {
     }
 
     const request = new XMLHttpRequest();
-    request.open("GET", `${__webpack_public_path__}miking/src/stdlib/${file}`, false);
+    
+    let url: string;
+    try {
+        url = (stdlibCtx(`./${file}`) as {default: string}).default;
+    } catch {
+        return null;
+    }
+    
+    request.open("GET", url, false);
     request.send(null);
 
     if (request.status < 200 || request.status >= 300) {
-        fetchCache.set(file, null);
-        return null;
-    }
-
-    if (request.getResponseHeader("Content-Type")?.toUpperCase()?.includes("HTML")) {
-        fetchCache.set(file, null);
-        return null;
+        throw new Error(request.statusText);
     }
 
     fetchCache.set(file, request.responseText);
