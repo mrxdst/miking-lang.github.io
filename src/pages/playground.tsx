@@ -1,76 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useColorMode } from "@docusaurus/theme-common";
 import Layout from "@theme/Layout";
 import styles from "./playground.module.css";
 import clsx from "clsx";
-import type { FromWorkerMessage, ToWorkerMessage } from "../misc/playground.worker";
+import type { FromWorkerMessage, ToWorkerMessage } from "../playground/playground.worker";
 import "@xterm/xterm/css/xterm.css";
 import { ITheme, Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import Editor from "@monaco-editor/react";
 import type * as monaco from "monaco-editor";
-import { conf, language } from "../misc/miking-monarch";
+import { conf, language } from "../playground/miking-monarch";
+import { Example, examples } from "../playground/examples";
 import BrowserOnly from "@docusaurus/BrowserOnly";
 
 const STORAGE_KEY = "miking-playground-src";
-const DEFAULT_INPUT = `-- A base language fragment for an expression evaluator.
--- It does not implement anything on its own.
-lang Eval
-  syn Expr =
-
-  sem eval: Expr -> Expr
-end
-
--- A language fragment that extends the Eval fragment
--- with numbers and arithmetic addition.
-lang Arith = Eval
-  syn Expr +=
-  | Num Int
-  | Add (Expr, Expr)
-
-  sem eval +=
-  | Num n -> Num n
-  | Add (e1, e2) ->
-    match eval e1 with Num n1 then
-      match eval e2 with Num n2 then
-        Num (addi n1 n2)
-      else error "Not a number"
-    else error "Not a number"
-end
-
--- Another language fragment that implements logical
--- values and branching.
-lang Logic = Eval
-  syn Expr +=
-  | True()
-  | False()
-  | If (Expr, Expr, Expr)
-
-  sem eval +=
-  | True() -> True()
-  | False() -> False()
-  | If (cnd, thn, els) ->
-    let cndVal = eval cnd in
-    match cndVal with True() then eval thn
-    else match cndVal with False() then eval els
-    else error "Not a boolean"
-end
-
--- Here we compose the two language fragments to
--- make a third language fragment that implements
--- both arithmetic and logical operations.
-lang ArithLogic = Arith + Logic end
-
--- End of declarations and start of program
-mexpr
-
-use ArithLogic in
-
--- Construct an abstract syntax tree and evaluate it.
-let ast = Add (If (False(), Num 0, Num 5), Num 2) in
-let result = eval ast in
-dprint result
-`;
+const DEFAULT_INPUT = examples.helloWorld.src;
 
 const termLightTheme: ITheme = {
   background: "#ffffff",
@@ -90,7 +34,7 @@ const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
 };
 
 function initWorker(): Worker {
-    return new Worker(new URL("../misc/playground.worker", import.meta.url));
+    return new Worker(new URL("../playground/playground.worker", import.meta.url));
 }
 
 export default function Playground(): JSX.Element {
@@ -186,8 +130,9 @@ function PlaygroundInner(): JSX.Element {
     }, []);
 
     const handleRun = useCallback(() => {
+        if (!editorRef.current) return;
         setRunning(true);
-        const msg: ToWorkerMessage = { input: editorRef.current?.getValue() || "" };
+        const msg: ToWorkerMessage = { input: editorRef.current.getValue() };
         worker.postMessage(msg);
     }, [worker]);
 
@@ -196,15 +141,41 @@ function PlaygroundInner(): JSX.Element {
         setWorker(initWorker());
     }, [initWorker]);
 
+    const handleExampleChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
+        if (!editorRef.current) return;
+        const key = e.target.value;
+        e.target.value = "";
+        const ex = (examples as Record<string, Example | undefined>)[key];
+        if (!ex) return;
+        const model = editorRef.current.getModel();
+        if (!model) return;
+        const range = model.getFullModelRange();
+        model.pushEditOperations([], [{range, text: ex.src}], () => null);
+    }, []);
+
     return (
         <div className={clsx(styles.root, "container margin-vert--lg")}>
             <div className="row">
                 <div className="col col--12">
                     <h1>The Miking playground</h1>
-                    <p>
+                    <p style={{marginBottom: 0}}>
                         Edit the Miking program source in the editor to the left and hit <b>Run</b> at the bottom.<br/>
-                        The program output will be displayed in the right column.
+                        The program output will be displayed in the right column.<br/>
                     </p>
+                </div>
+            </div>
+            <div className="row">
+                <div className="col col--6">
+                    <div style={{textAlign: "right"}}>
+                        <select className={styles.select} onChange={handleExampleChange}>
+                            <option value="" disabled>Pick an example</option>
+                            {Object.entries(examples).map(([key, ex]) => {
+                                return (
+                                    <option key={key} value={key}>{ex.name}</option>
+                                );
+                            })}
+                        </select>
+                    </div>
                 </div>
             </div>
             <div className="row">
@@ -220,7 +191,7 @@ function PlaygroundInner(): JSX.Element {
                             options={editorOptions}
                         />
                     </div>
-                    <p className={styles.textAlignRight}>
+                    <p style={{textAlign: "right"}}>
                         {running
                             ? <button className={styles.btn} onClick={handleAbort}>Abort</button>
                             : <button className={styles.btn} onClick={handleRun}>Run</button>

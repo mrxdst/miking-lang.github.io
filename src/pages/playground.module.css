@@ -14,8 +14,9 @@
     overflow: hidden;
 }
 
-.textAlignRight {
-    text-align: right;
+.select {
+    margin-bottom: 4px;
+    font-size: 1em;
 }
 
 .btn {
