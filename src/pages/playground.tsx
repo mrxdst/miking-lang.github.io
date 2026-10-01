@@ -202,7 +202,7 @@ function PlaygroundInner(): JSX.Element {
                 <div className="col col--12">
                     <h1>The Miking playground</h1>
                     <p>
-                        Edit the Miking program source in the editor to the left and hit <b>Run</b>.<br/>
+                        Edit the Miking program source in the editor to the left and hit <b>Run</b> at the bottom.<br/>
                         The program output will be displayed in the right column.
                     </p>
                 </div>
@@ -222,8 +222,8 @@ function PlaygroundInner(): JSX.Element {
                     </div>
                     <p className={styles.textAlignRight}>
                         {running
-                            ? <button onClick={handleAbort}>Abort</button>
-                            : <button onClick={handleRun}>Run</button>
+                            ? <button className={styles.btn} onClick={handleAbort}>Abort</button>
+                            : <button className={styles.btn} onClick={handleRun}>Run</button>
                         }
                     </p>
                 </div>

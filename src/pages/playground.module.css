@@ -18,6 +18,11 @@
     text-align: right;
 }
 
+.btn {
+    margin-top: 4px;
+    font-size: 1.1em;
+}
+
 :global(.xterm .xterm-cursor) {
     visibility: hidden;
 }
