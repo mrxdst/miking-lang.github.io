@@ -131,6 +131,7 @@ function PlaygroundInner(): JSX.Element {
 
     const handleRun = useCallback(() => {
         if (!editorRef.current) return;
+        termRef.current?.clear();
         setRunning(true);
         const msg: ToWorkerMessage = { input: editorRef.current.getValue() };
         worker.postMessage(msg);
@@ -168,7 +169,7 @@ function PlaygroundInner(): JSX.Element {
                 <div className="col col--6">
                     <div style={{textAlign: "right"}}>
                         <select className={styles.select} onChange={handleExampleChange}>
-                            <option value="" disabled>Pick an example</option>
+                            <option value="">Pick an example</option>
                             {Object.entries(examples).map(([key, ex]) => {
                                 return (
                                     <option key={key} value={key}>{ex.name}</option>
