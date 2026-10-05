@@ -1,8 +1,8 @@
 /// <reference types="webpack/module" />
 
-import mi from "../../modules/miking/src/es-boot/mi.mjs";
+import mi from "../../modules/miking/src/es-boot/mi-es-lite.mjs";
 
-declare module "../../modules/miking/src/es-boot/mi.mjs" {
+declare module "../../modules/miking/src/es-boot/mi-es-lite.mjs" {
     export default function main(env: CompilerEnv): void;
 }
 
