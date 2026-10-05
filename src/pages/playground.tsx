@@ -1,4 +1,4 @@
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, JSX, useCallback, useEffect, useRef, useState } from "react";
 import { useColorMode } from "@docusaurus/theme-common";
 import Layout from "@theme/Layout";
 import styles from "./playground.module.css";

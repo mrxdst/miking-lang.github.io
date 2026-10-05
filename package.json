@@ -16,23 +16,23 @@
     "pull": "node pull.js"
   },
   "dependencies": {
-    "@docusaurus/core": "3.7.0",
-    "@docusaurus/preset-classic": "3.7.0",
+    "@docusaurus/core": "~3.10.2",
+    "@docusaurus/preset-classic": "~3.10.2",
     "@mdx-js/react": "^3.1.0",
     "@monaco-editor/react": "^4.7.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "clsx": "^2.1.1",
-    "monaco-editor": "^0.56.0",
+    "monaco-editor": "^0.57.0",
     "prism-react-renderer": "^2.4.1",
-    "react": "^18.2.7",
-    "react-dom": "^18.2.7"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.7.0",
-    "@docusaurus/tsconfig": "3.7.0",
-    "@types/react": "^18.2.7",
-    "typescript": "~5.8.2"
+    "@docusaurus/module-type-aliases": "~3.10.2",
+    "@docusaurus/tsconfig": "~3.10.2",
+    "@types/react": "^19.3.0",
+    "typescript": "~7.0.0"
   },
   "browserslist": {
     "production": [
@@ -45,5 +45,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "allowScripts": {
+    "core-js": true,
+    "core-js-pure": true
   }
 }
