@@ -267,7 +267,29 @@ function newCompilerEnv(input: string) {
 type ProgramEnv = ReturnType<typeof newProgramEnv>;
 
 function newProgramEnv() {
+    const  fs = new Map<string, string>();
+
     return {
+        argv: () => [],
+
+        command: (cmd: string): number => 127,
+
+        writeFile: (path: string, data: string): void => {
+            fs.set(path, data);
+        },
+
+        readFile: (path: string): string => {
+            const content = fs.get(path);
+            if (typeof content !== "string") {
+                throw new Error(`${path}: No such file`);
+            }
+            return content;
+        },
+
+        fileExists: (path: string): boolean => {
+            return fs.has(path);
+        },
+
         print: (s: string): void => {
             print(s);
         },
