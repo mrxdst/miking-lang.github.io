@@ -6,7 +6,7 @@ declare module "../../modules/miking/src/es-boot/mi-es-lite.mjs" {
     export default function main(env: CompilerEnv): void;
 }
 
-const stdlibCtx = import.meta.webpackContext("file-loader?outputPath=stdlib!../../modules/miking/src/stdlib", {
+const stdlibCtx = import.meta.webpackContext("../../modules/miking/src/stdlib", {
     mode: "sync",
     recursive: true,
     regExp: /\.mc$/i,
@@ -66,13 +66,14 @@ async function compileAndRun(input: string) {
                     return;
                 }
             } else {
+                console.log(error);
                 print("" + error);
                 return;
             }
         }
 
         try {
-            const dataUrl = `data:text/javascript;base64,${globalThis.btoa(compilerEnv.getOutput())}`;
+            const dataUrl = `data:text/javascript;charset=utf-8,${globalThis.encodeURIComponent(compilerEnv.getOutput())}`;
             const program = (await importUrl(dataUrl)).default as (env: ProgramEnv) => void;
             const programEnv = newProgramEnv();
             program(programEnv);
@@ -82,6 +83,7 @@ async function compileAndRun(input: string) {
                     print(`\nProgram exited with code: ${error.code}`);
                 }
             } else {
+                console.log(error);
                 print("\n" + error);
             }
         }
@@ -340,7 +342,7 @@ function syncFetchStdLibFile(file: string): string | null {
     
     let url: string;
     try {
-        url = (stdlibCtx(`./${file}`) as {default: string}).default;
+        url = stdlibCtx(`./${file}`) as string;
     } catch {
         return null;
     }

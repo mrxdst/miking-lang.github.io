@@ -14,7 +14,7 @@ import { Example, examples } from "../playground/examples";
 import BrowserOnly from "@docusaurus/BrowserOnly";
 
 const STORAGE_KEY = "miking-playground-src";
-const DEFAULT_INPUT = examples.helloWorld.src;
+const DEFAULT_INPUT = examples.at(0)!.src;
 
 const termLightTheme: ITheme = {
   background: "#ffffff",
@@ -144,9 +144,9 @@ function PlaygroundInner(): JSX.Element {
 
     const handleExampleChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
         if (!editorRef.current) return;
-        const key = e.target.value;
+        const name = e.target.value;
         e.target.value = "";
-        const ex = (examples as Record<string, Example | undefined>)[key];
+        const ex = examples.find(ex => ex.name === name);
         if (!ex) return;
         const model = editorRef.current.getModel();
         if (!model) return;
@@ -170,9 +170,9 @@ function PlaygroundInner(): JSX.Element {
                     <div style={{textAlign: "right"}}>
                         <select className={styles.select} onChange={handleExampleChange}>
                             <option value="">Pick an example</option>
-                            {Object.entries(examples).map(([key, ex]) => {
+                            {examples.map(ex => {
                                 return (
-                                    <option key={key} value={key}>{ex.name}</option>
+                                    <option key={ex.name} value={ex.name}>{ex.name}</option>
                                 );
                             })}
                         </select>
