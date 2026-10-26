@@ -56,7 +56,7 @@ function handleMessage(event: MessageEvent<ToWorkerMessage>) {
 
 async function compileAndRun(input: string) {
     try {
-        const compilerEnv = newCompilerEnv(input);
+        const compilerEnv = newEnv(input);
         try {
             mi(compilerEnv);
         } catch (error) {
@@ -74,8 +74,8 @@ async function compileAndRun(input: string) {
 
         try {
             const dataUrl = `data:text/javascript;charset=utf-8,${globalThis.encodeURIComponent(compilerEnv.getOutput())}`;
-            const program = (await importUrl(dataUrl)).default as (env: ProgramEnv) => void;
-            const programEnv = newProgramEnv();
+            const program = (await importUrl(dataUrl)).default as (env: CompilerEnv) => void;
+            const programEnv = newEnv();
             program(programEnv);
         } catch (error) {
             if (error instanceof ExitError) {
@@ -93,17 +93,19 @@ async function compileAndRun(input: string) {
     }
 }
 
-type CompilerEnv = ReturnType<typeof newCompilerEnv>;
+type CompilerEnv = ReturnType<typeof newEnv>;
 
-function newCompilerEnv(input: string) {
+function newEnv(compilerInput?: string) {
 
-    const argv = [
+    const isCompiler = compilerInput !== undefined;
+
+    const argv = isCompiler ? [
         "mi",
         "compile",
         "--test",
         "playground.mc",
         "--to-es"
-    ];
+    ] : [];
 
     let fs = new Map<string, string>();
     
@@ -111,10 +113,13 @@ function newCompilerEnv(input: string) {
     const PWD = `${HOME}`;
     const STDLIB = `${HOME}/.local/lib/mcore/stdlib`;
     const MCORE_LIBS = `stdlib=${STDLIB}`;
-    
-    fs.set(`${PWD}/playground.mc`, input);
 
+    if (isCompiler) {
+        fs.set(`${PWD}/playground.mc`, compilerInput);
+    }
+    
     let stdout = "";
+    let seed: number | null = null;
 
     const env = {
         argv: (): string[] => argv,
@@ -221,16 +226,33 @@ function newCompilerEnv(input: string) {
             return fs.has(path);
         },
 
+        deleteFile: (path: string) => {
+            fs.delete(path);
+        },
+
         print: (s: string): void => {
-            stdout += s;
+            if (isCompiler) {
+                stdout += s;
+            } else {
+                print(s);
+            }
         },
 
         printError: (s: string): void => {
-            stdout += s;
+            if (isCompiler) {
+                stdout += s;
+            } else {
+                print(s);
+            }
         },
 
         dprint: (v: unknown): void => {
-            stdout += JSON.stringify(v, null, 2);
+            const s = JSON.stringify(v, null, 2);
+            if (isCompiler) {
+                stdout += s;
+            } else {
+                print(s);
+            }
         },
 
         flushStdout: () => {},
@@ -248,9 +270,30 @@ function newCompilerEnv(input: string) {
             throw new Error("" + msg);
         },
 
-        randIntU: (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo)),
+        // We do not use Math.random since it can not be seeded, utests in random-test.mc will fail.
+        // Algorithm is splitmix32
+        randIntU: (lo: number, hi: number): number => {
+            if (seed == null) {
+                seed = (Math.random() * 2 ** 32) | 0;
+            }
+            seed = (seed + 0x9e3779b9) | 0;
+            let z = seed;
+            z = Math.imul(z ^ (z >>> 16), 0x21f0aaad);
+            z = Math.imul(z ^ (z >>> 15), 0x735a2d97);
+            z = (z ^ (z >>> 15)) >>> 0;
+            return lo + (z % (hi - lo));
+        },
+
+        randSetSeed: (_seed: number): void => {
+            seed = _seed | 0;
+        },
 
         wallTimeMs: (): number => Date.now(),
+
+        sleepMs: (ms: number): void => {
+            const end = Date.now() + ms;
+            while (Date.now() < end) {}
+        },
 
         getOutput: (): string => {
             const content = fs.get("./playground.mjs");
@@ -264,70 +307,6 @@ function newCompilerEnv(input: string) {
     };
 
     return env;
-}
-
-type ProgramEnv = ReturnType<typeof newProgramEnv>;
-
-function newProgramEnv() {
-    const  fs = new Map<string, string>();
-
-    return {
-        argv: () => [],
-
-        command: (cmd: string): number => 127,
-
-        writeFile: (path: string, data: string): void => {
-            fs.set(path, data);
-        },
-
-        readFile: (path: string): string => {
-            const content = fs.get(path);
-            if (typeof content !== "string") {
-                throw new Error(`${path}: No such file`);
-            }
-            return content;
-        },
-
-        fileExists: (path: string): boolean => {
-            return fs.has(path);
-        },
-
-        print: (s: string): void => {
-            print(s);
-        },
-
-        printError: (s: string): void => {
-            print(s);
-        },
-
-        dprint: (v: unknown): void => {
-            print(JSON.stringify(v, null, 2));
-        },
-
-        flushStdout: () => {},
-
-        flushStderr: () => {},
-
-        exit: (code: number): never => {
-            throw new ExitError(code);
-        },
-
-        error: (msg: unknown): never => {
-            if (msg instanceof Error) {
-                throw msg;
-            }
-            throw new Error("" + msg);
-        },
-
-        randIntU: (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo)),
-
-        wallTimeMs: (): number => Date.now(),
-
-        sleepMs: (ms: number): void => {
-            const end = Date.now() + ms;
-            while (Date.now() < end) {}
-        },
-    };
 }
 
 const fetchCache = new Map<string, string>();

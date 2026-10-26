@@ -107,6 +107,7 @@ function PlaygroundInner(): JSX.Element {
                 }
                 case "exit": {
                     setRunning(false);
+                    setWorker(initWorker());
                     break;
                 }
             }
