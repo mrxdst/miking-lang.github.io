@@ -1,0 +1,4 @@
+[submodule "modules/miking"]
+	path = modules/miking
+	url = https://github.com/miking-lang/miking.git
+	branch = develop

@@ -159,7 +159,9 @@ function PlaygroundInner(): JSX.Element {
         <div className={clsx(styles.root, "container margin-vert--lg")}>
             <div className="row">
                 <div className="col col--12">
-                    <h1>The Miking playground</h1>
+                    <h1>
+                        The Miking playground<sup style={{fontSize: "40%"}}> BETA</sup>
+                    </h1>
                     <p style={{marginBottom: 0}}>
                         Edit the Miking program source in the editor to the left and hit <b>Run</b> at the bottom.<br/>
                         The program output will be displayed in the right column.<br/>

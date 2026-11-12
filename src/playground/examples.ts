@@ -34,11 +34,7 @@ const _examples = [
     { name: "Random number generation intrinsics", src: randomTest },
     { name: "Records", src: records },
     { name: "Reference intrinsics", src: references },
-    {
-        name: "Sequences intrinsics",
-        // Only rope is implemented, comment out utest for isRope and isList
-        src: seqTest.replaceAll(/^utest is(Rope|List) /gm, m => `-- ${m}`)
-    },
+    { name: "Sequences intrinsics", src: seqTest },
     { name: "Side effect intrinsics", src: effects },
     { name: "String operations", src: stringops },
     { name: "Strings intrinsics", src: stringTest },

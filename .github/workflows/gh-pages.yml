@@ -18,18 +18,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Install OCaml and opam for Miking
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ocaml-base-compiler.5.3.0
+
+      - name: Install opam packages
+        run: |
+          eval $(opam env)
+          opam install -y dune linenoise menhir ocamlfind ocamlformat.0.29.0
+      
       - name: Setup Pages
         uses: actions/configure-pages@v3
+
       - name: Install dependencies
         run: "npm install"
+
       - name: Build with Docusaurus
         run: "npm run build"
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

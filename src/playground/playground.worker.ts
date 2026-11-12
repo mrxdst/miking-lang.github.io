@@ -1,8 +1,8 @@
 /// <reference types="webpack/module" />
 
-import mi from "../../modules/miking/src/es-boot/mi-es-lite.mjs";
+import mi from "./compiler.mjs";
 
-declare module "../../modules/miking/src/es-boot/mi-es-lite.mjs" {
+declare module "./compiler.mjs" {
     export default function main(env: CompilerEnv): void;
 }
 
@@ -65,9 +65,11 @@ async function compileAndRun(input: string) {
                     print(compilerEnv.getStdout());
                     return;
                 }
-            } else {
+            }
+            else {
                 console.log(error);
                 print("" + error);
+                maybePrintStackOverflowNotice(error);
                 return;
             }
         }
@@ -85,6 +87,7 @@ async function compileAndRun(input: string) {
             } else {
                 console.log(error);
                 print("\n" + error);
+                maybePrintStackOverflowNotice(error);
             }
         }
     } finally {
@@ -99,13 +102,7 @@ function newEnv(compilerInput?: string) {
 
     const isCompiler = compilerInput !== undefined;
 
-    const argv = isCompiler ? [
-        "mi",
-        "compile",
-        "--test",
-        "playground.mc",
-        "--to-es"
-    ] : [];
+    const argv: string[] = [];
 
     let fs = new Map<string, string>();
     
@@ -335,6 +332,15 @@ function syncFetchStdLibFile(file: string): string | null {
 
     fetchCache.set(file, request.responseText);
     return request.responseText;
+}
+
+function maybePrintStackOverflowNotice(error: unknown) {
+    if (!(error instanceof Error)) return;
+    if (!(/call stack size exceeded|too much recursion|out of stack space/i.test(error.message))) return;
+
+    print("\nThe stack overflowed in the playground due to deep recursion.");
+    print("\nThis is a limitation imposed by the browser.");
+    print("\nTry installing Miking on your computer and run locally instead.");
 }
 
 class ExitError extends Error {
