@@ -1,47 +1,28 @@
-import helloWorld from "./examples/hello-world.mc";
-import utest from "./examples/utest.mc";
-import languageComposition from "./examples/language-composition.mc";
-
-import boolTest from "../../modules/miking/src/test/mexpr/bool-test.mc";
-import effects from "../../modules/miking/src/test/mexpr/effects.mc";
-import floatTest from "../../modules/miking/src/test/mexpr/float-test.mc";
-import intTest from "../../modules/miking/src/test/mexpr/int-test.mc";
-import match from "../../modules/miking/src/test/mexpr/match.mc";
-import randomTest from "../../modules/miking/src/test/mexpr/random-test.mc";
-import reclets from "../../modules/miking/src/test/mexpr/reclets.mc";
-import records from "../../modules/miking/src/test/mexpr/records.mc";
-import references from "../../modules/miking/src/test/mexpr/references.mc";
-import seqTest from "../../modules/miking/src/test/mexpr/seq-test.mc";
-import stringops from "../../modules/miking/src/test/mexpr/stringops.mc";
-import stringTest from "../../modules/miking/src/test/mexpr/string-test.mc";
-import symbs from "../../modules/miking/src/test/mexpr/symbs.mc";
-import time from "../../modules/miking/src/test/mexpr/time.mc";
-import tuples from "../../modules/miking/src/test/mexpr/tuples.mc";
-
 export interface Example {
     name: string,
     src: string,
 }
 
-const _examples = [
-    { name: "Boolean intrinsics", src: boolTest },
-    { name: "Floating-point number intrinsics", src: floatTest },
-    { name: "Hello, world", src: helloWorld },
-    { name: "Integer intrinsics", src: intTest },
-    { name: "Language composition", src: languageComposition },
-    { name: "Match", src: match },
-    { name: "Mutual recursion", src: reclets },
-    { name: "Random number generation intrinsics", src: randomTest },
-    { name: "Records", src: records },
-    { name: "Reference intrinsics", src: references },
-    { name: "Sequences intrinsics", src: seqTest },
-    { name: "Side effect intrinsics", src: effects },
-    { name: "String operations", src: stringops },
-    { name: "Strings intrinsics", src: stringTest },
-    { name: "Symbol intrinsics", src: symbs },
-    { name: "Time intrinsics", src: time },
-    { name: "Tuples", src: tuples },
-    { name: "Unit tests", src: utest },
-] satisfies Example[];
+const exCtx = import.meta.webpackContext("../../modules/miking/src/test/playground", {
+    mode: "sync",
+    recursive: true,
+    regExp: /\.mc$/i,
+});
 
-export const examples = _examples as Example[];
+export const examples: Example[] = [];
+
+for (const key of exCtx.keys()) {
+    let src = exCtx(key) as string;
+
+    const titleRe = /-- title: (.+)(?:\r?\n)+/;
+
+    const match = src.match(titleRe);
+    const name = match?.[1];
+    if (!name) continue;
+
+    src = src.replace(titleRe, "");
+
+    examples.push({name, src});
+}
+
+examples.sort((a, b) => a.name.localeCompare(b.name));

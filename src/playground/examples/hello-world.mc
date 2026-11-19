@@ -1,3 +1,0 @@
-mexpr
-
-print "Hello, world!"

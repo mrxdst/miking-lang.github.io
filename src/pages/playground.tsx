@@ -14,7 +14,7 @@ import { Example, examples } from "../playground/examples";
 import BrowserOnly from "@docusaurus/BrowserOnly";
 
 const STORAGE_KEY = "miking-playground-src";
-const DEFAULT_INPUT = examples.at(0)!.src;
+const DEFAULT_INPUT = examples.find(ex => ex.name.startsWith("Hello"))?.src || '';
 
 const termLightTheme: ITheme = {
   background: "#ffffff",
