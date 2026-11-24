@@ -8,7 +8,9 @@ The website is built using [Docusaurus 2](https://docusaurus.io/), a modern stat
 
 ### Installation
 
-Install [Node.js](https://nodejs.org/en/) and [dependencies for Miking](https://miking.org/installation) on your computer.
+Install [Node.js](https://nodejs.org/en/).
+A npm postinstall script will bootstrap Miking and build a compiler for the playground.
+Make sure your environment is setup for miking development, see [Miking installation](https://miking.org/installation).
 
 Run command
 
